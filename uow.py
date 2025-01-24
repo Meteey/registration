@@ -3,7 +3,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.testing.plugin.plugin_base import config
 
-from repositories import AbstractRepository, SqlAlchemyDepartmentRepository, SqlAlchemyCourseRepository
+from MessageBus import MessageBus
+from repositories import AbstractRepository, SqlAlchemyDepartmentRepository, SqlAlchemyCourseRepository, \
+    SqlAlchemyStudentRepository
 
 
 class AbstractUow(abc.ABC):
@@ -14,8 +16,13 @@ class AbstractUow(abc.ABC):
     @abc.abstractmethod
     def rollback(self):
         pass
+    @abc.abstractmethod
+    def publishEvents(self):
+        pass
     def commit(self):
+        self.publishEvents()
         self._commit()
+
     @abc.abstractmethod
     def _commit(self):
         pass
@@ -70,10 +77,17 @@ class CourseUow(AbstractUow):
 
 
 class StudentUow(AbstractUow):
+    def publishEvents(self):
+        for student in self.students:
+            while student.events:
+                event = student.events.pop(0)
+                MessageBus.handle(event)
+
     def rollback(self):
         self.session.rollback()
 
     def _commit(self):
+        self.publishEvents()
         self.session.commit()
 
     def __init__(self,repository: AbstractRepository, session_factory = DEFAULT_SESSION):
@@ -82,7 +96,7 @@ class StudentUow(AbstractUow):
 
     def __enter__(self):
         self.session = self.session_factory()
-        self.students = SqlA(self.session)
+        self.students = SqlAlchemyStudentRepository(self.session)
         return self
     def __exit__(self, *args):
         if any(args):

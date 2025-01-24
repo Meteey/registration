@@ -1,3 +1,6 @@
+import Events
+
+
 class Student:
     def __init__(self, stdid, mail, grade, credit, departmentId, enrolledCourses):
         self.stdid = stdid
@@ -6,7 +9,10 @@ class Student:
         self.credit = credit
         self.departmentId = departmentId
         self.enrolledCourses = enrolledCourses
-
+        self.events= []
+    def addCourse(self, courseId):
+        self.enrolledCourses.append(courseId)
+        self.events.append(Events.StudentEnrolledEvent(self.stdid, courseId))
 class Department:
     def __init__(self, departmentId, stdIds, instrIds, CourseIds):
         self.departmentId = departmentId

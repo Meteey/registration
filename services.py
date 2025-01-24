@@ -1,4 +1,3 @@
-import Events
 import repositories
 import uow
 
@@ -12,10 +11,9 @@ def getAllClasses(departmentId):
         return department.CourseIds
 def enrollStudent(Student, courseId):
     with uow.StudentUow(repositories.SqlAlchemyStudentRepository) as suow:
-        Student.enrolledCourses.append(courseId)
+        Student.addCourse(courseId)
         students = suow.students
-        isEnrolled = students.update(Student)
-        if isEnrolled:
-            Events.StudentEnrolledEvent(Student.stdid, courseId)
-            
+        students.update(Student)
+        suow.commit()
+
 
